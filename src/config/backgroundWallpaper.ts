@@ -2,7 +2,7 @@ import type { BackgroundWallpaperConfig } from "@/types/backgroundWallpaper";
 
 export const backgroundWallpaper: BackgroundWallpaperConfig = {
 	// 壁纸模式："banner" 横幅壁纸，"fullscreen" 全屏壁纸，"overlay" 全屏透明，"none" 纯色背景无壁纸
-	mode: "overlay",
+	mode: "fullscreen",
 	// 是否启用背景视频播放，配置后将在导航栏显示视频播放按钮
 	playerEnable: true,
 	/**
@@ -59,17 +59,51 @@ export const backgroundWallpaper: BackgroundWallpaperConfig = {
 			// 是否启用主页横幅文字
 			enable: true,
 			// 主页横幅主标题
-			title: "Lovely firefly!",
+			title: "sudo universe --explore",
 			// 主页横幅主标题字体大小
 			titleSize: "4.5rem",
 			// 主页横幅副标题
 			subtitle: [
-				"In Reddened Chrysalis, I Once Rest",
-				"From Shattered Sky, I Free Fall",
-				"Amidst Silenced Stars, I Deep Sleep",
-				"Upon Lighted Fyrefly, I Soon Gaze",
-				"From Undreamt Night, I Thence Shine",
-				"In Finalized Morrow, I Full Bloom",
+				"Grep the stars, awk the galaxies",
+				"Ping 127.0.0.1 of the cosmos",
+				"Compiling dark matter... Done",
+				"Segmentation fault: reality not found",
+				"Redirecting stderr to /dev/blackhole",
+				"Bits whisper across light-years",
+				"Space is the ultimate stack trace",
+				"Quantum entanglement of logic and dreams",
+				"In the void, we deploy our first beacon",
+				"Cosmic latency: 13.8 billion years",
+				"We write our existence in code",
+				"Every star is a node in the network",
+				"The universe is the ultimate open source",
+				"From singularity to runtime",
+				"Echoes of the Big Bang in every compile",
+				"Navigating the infinite with a keyboard",
+				"Where algorithms meet nebulae",
+				"Deploying consciousness across galaxies",
+				"Debugging the fabric of spacetime",
+				"We are stardust, compiled into thought",
+				"Rivers are the system logs of the earth",
+				"Mountains cached in tectonic memory",
+				"Wind: a distributed message queue",
+				"Leaves falling, each a micro-service restarted",
+				"The forest runs on sunlight 2.0",
+				"Clouds are just floating JSON objects",
+				"The ocean compiles its waves every dawn",
+				"Birdsong: the most elegant API call",
+				"Raindrops are nature's packet loss",
+				"The earth's kernel is alive and well",
+				"The greatest algorithm has no bugs",
+				"Mountains are the original monoliths",
+				"Debugging the wind is futile",
+				"We are nature's way of observing itself",
+				"From soil to silicon, a gentle return",
+				"Canyons carved by time.log",
+				"Glaciers are the ultimate cold storage",
+				"Tectonic plates: the slowest merge request",
+				"Volcanoes are the system's core dumps",
+				"The desert stores ancient environment variables"
 			],
 			// 主页横幅副标题字体大小
 			subtitleSize: "1.5rem",
@@ -144,7 +178,7 @@ export const backgroundWallpaper: BackgroundWallpaperConfig = {
 		// 背景模糊度
 		blur: 10,
 		// 卡片透明度，0-1之间，值越小越透明
-		cardOpacity: 0.5,
+		cardOpacity: 0.8,
 	},
 	// 全屏壁纸模式特有配置
 	fullscreen: {
