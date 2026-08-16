@@ -43,7 +43,7 @@ export const siteConfig: SiteConfig = {
 	title: "MyBlog",
 
 	// 站点副标题
-	subtitle: "YNM",
+	subtitle: "Ynm",
 
 	// 站点 URL
 	site_url: "https://firefly-569.pages.dev",
@@ -66,7 +66,7 @@ export const siteConfig: SiteConfig = {
 	// 主题色
 	themeColor: {
 		// 主题色的默认色相，范围从 0 到 360。例如：红色：0，青色：200，蓝绿色：250，粉色：345
-		hue: 250,
+		hue: 240,
 		// 默认模式："light" 亮色，"dark" 暗色，"system" 跟随系统
 		defaultMode: "light",
 	},
@@ -123,7 +123,7 @@ export const siteConfig: SiteConfig = {
 		// 导航栏图标和标题是否跟随主题色
 		followTheme: false,
 		// 导航栏是否固定在顶部并始终可见
-		stickyNavbar: false,
+		stickyNavbar: true,
 	},
 
 	// 站点开始日期，用于统计运行天数
