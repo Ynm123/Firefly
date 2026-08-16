@@ -1,6 +1,6 @@
 {
-	"name": "firefly",
-	"compatibility_date": "2025-01-01",
+	"name": "My-Blog",
+	"compatibility_date": "2026-08-16",
 	"compatibility_flags": ["nodejs_compat"],
 	"assets": {
 		"directory": "./dist"
