@@ -12,7 +12,7 @@ export const sponsorConfig: SponsorConfig = {
 		"",
 
 	// 是否显示打赏者列表
-	showSponsorsList: true,
+	showSponsorsList: false,
 
 	// 是否显示评论区，需要先在commentConfig.ts启用评论系统
 	showComment: true,
