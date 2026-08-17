@@ -486,6 +486,13 @@ html {
     @apply cursor-zoom-in
 }
 
+#post-cover {
+    max-width: 85%;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+
 ::selection {
     background-color: var(--selection-bg)
 }

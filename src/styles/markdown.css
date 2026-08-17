@@ -1,6 +1,20 @@
 @reference "tailwindcss";
 
 .custom-md {
+  /* 限制文章正文图片最大宽度为内容区 80%，并居中显示 */
+  img,
+  figure {
+    max-width: 85%;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  /* 图片网格内的图片保持 100% 宽度（不受上面的限制影响） */
+  .image-grid img,
+  .image-grid figure {
+    max-width: 100%;
+  }
+
   overflow-wrap: break-word;
 
   body.sticky-navbar & {
