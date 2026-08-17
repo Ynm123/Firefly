@@ -1,1 +1,22 @@
-这里是HTML注入示例，你可以在这个文件中添加自定义的HTML内容
+<div style="text-align: center; font-size: 14px; color: var(--firefly-secondary); padding: 10px 0;">
+  <!-- 使用51.la的数据挂件来显示总访问量和访客数 -->
+  <span id="busuanzi_container_site_pv" style="display: inline;">
+    本站总访问量 <span id="busuanzi_value_site_pv"></span> 次
+  </span>
+  &nbsp;|&nbsp;
+  <span id="busuanzi_container_site_uv" style="display: inline;">
+    本站访客数 <span id="busuanzi_value_site_uv"></span> 人
+  </span>
+  <script>
+    // 异步加载51.la的widget脚本来获取数据
+    (function() {
+      var script = document.createElement('script');
+      script.type = 'text/javascript';
+      script.async = true;
+      // 重要：将下面的 '你的ID' 替换为你的51.la站点ID
+      script.src = 'https://v6-widget.51.la/v6/3QuNK0eBBZS0LHtp/quote.js';
+      var s = document.getElementsByTagName('script')[0];
+      s.parentNode.insertBefore(script, s);
+    })();
+  </script>
+</div>
