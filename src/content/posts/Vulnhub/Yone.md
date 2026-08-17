@@ -26,7 +26,7 @@ comment: true
 *   **目标**: 获取 root 权限并找到 flag
 
 ## 🔍 信息收集 (Reconnaissance)
-![](images/Pasted%20image%2020260817112333.png)
+
 ### 主机发现
 *   使用 `netdiscover` 或 `nmap` 进行主机发现，确定靶机 IP 地址。
     ```bash
