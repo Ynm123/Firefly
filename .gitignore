@@ -47,3 +47,6 @@ package/
 .codex*
 .claude
 .mimocode
+# 本地 PowerShell 脚本
+*.ps1
+
