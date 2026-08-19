@@ -1,10 +1,10 @@
 @reference "tailwindcss";
 
 .custom-md {
-  /* 限制文章正文图片最大宽度为内容区 80%，并居中显示 */
+  /* 限制文章正文图片最大宽度为内容区 90%，并居中显示 */
   img,
   figure {
-    max-width: 87%;
+    max-width: 90%;
     margin-left: auto;
     margin-right: auto;
   }
