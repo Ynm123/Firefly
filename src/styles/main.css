@@ -502,6 +502,12 @@ html {
     @apply cursor-zoom-in
 }
 
+/* 文章封面图缩小到 90% 并居中 */
+#post-cover {
+    width: 90%;
+    margin: 0 auto;
+}
+
 ::selection {
     background-color: var(--selection-bg)
 }
