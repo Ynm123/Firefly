@@ -40,10 +40,10 @@ const pages = resolvePageToggles({
 
 export const siteConfig: SiteConfig = {
 	// 站点标题
-	title: "Firefly",
+	title: "MyBLog",
 
 	// 站点副标题
-	subtitle: "Demo site",
+	subtitle: "Ynm",
 
 	// 站点 URL
 	site_url: "https://firefly-569.pages.dev",
