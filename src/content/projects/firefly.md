@@ -60,19 +60,19 @@ link:
 ### 本地开发部署
 
 1. **克隆仓库：**
-   ```bash
+   ```bash wrap
    git clone https://github.com/Cuteleaf/Firefly.git
    cd Firefly
    ```
    
    **先 [Fork](https://github.com/CuteLeaf/Firefly/fork) 到自己仓库再克隆（推荐），记得先点 Star 再 Fork 哦！**
 
-   ```bash
+   ```bash wrap
    git clone https://github.com/you-github-name/Firefly.git
    cd Firefly
    ```
 3. **安装依赖：**
-   ```bash
+   ```bash wrap
    # 如果没有安装 pnpm，先安装
    npm install -g pnpm
    
@@ -84,7 +84,7 @@ link:
    - 编辑 `src/config/` 目录下的配置文件自定义博客设置
 
 5. **启动开发服务器：**
-   ```bash
+   ```bash wrap
    pnpm dev
    ```
    博客将在 `http://localhost:4321` 可用

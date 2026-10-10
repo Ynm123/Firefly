@@ -34,7 +34,7 @@ tags:
 
 ### 完整示例
 
-````yaml
+````yaml wrap
 ---
 title: "Firefly"
 slug: firefly

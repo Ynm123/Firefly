@@ -6,7 +6,7 @@ draft: true
 
 好的，基于你提供的 `Yone` 靶机博客文章，我为你提炼了一份通用的 **Vulnhub 靶机渗透测试 Write-Up 模板**。你可以将其作为未来编写类似博客的框架，只需替换 `[ ]` 中的内容即可。
 
-```markdown
+```markdown wrap
 ---
 title: [靶机名称]
 published: [YYYY-MM-DD]
@@ -42,7 +42,7 @@ comment: true
 使用 `nmap` 在本地网络中定位靶机 IP。
 ```
 nmap -sn [本地网段，如 192.168.1.0/24]
-```
+```text wrap
 ![](images/[截图文件名].png)
 结果输出：发现目标 IP 为：`[靶机IP]`
 
@@ -51,11 +51,11 @@ nmap -sn [本地网段，如 192.168.1.0/24]
 
 ```
 nmap -p- --min-rate 1000 [靶机IP]        # 快速全端口扫描
-```
+```text wrap
 ![](images/[截图文件名].png)
 ```
 nmap -p [开放端口列表] -sV -sC -O [靶机IP]   # 深入服务探测
-```
+```text wrap
 ![](images/[截图文件名].png)
 
 **扫描结果分析**：
@@ -75,14 +75,14 @@ nmap -p [开放端口列表] -sV -sC -O [靶机IP]   # 深入服务探测
 [描述操作步骤和目的]
 ```
 [执行的命令]
-```
+```text wrap
 ![](images/[截图文件名].png)
 
 #### 2.1.2 [具体步骤 2，如：发现路径遍历漏洞]
 [描述操作步骤和目的]
 ```
 [访问的 URL 或执行的命令]
-```
+```text wrap
 ![](images/[截图文件名].png)
 
 **结果**：
@@ -95,7 +95,7 @@ nmap -p [开放端口列表] -sV -sC -O [靶机IP]   # 深入服务探测
 [描述操作步骤和目的]
 ```
 [执行的命令]
-```
+```text wrap
 **参数说明**：
 - `[参数]`：[说明]
 - `[参数]`：[说明]
@@ -109,12 +109,12 @@ nmap -p [开放端口列表] -sV -sC -O [靶机IP]   # 深入服务探测
 使用获取到的凭据成功登录。
 ```
 ssh [用户名]@[靶机IP]
-```
+```text wrap
 查看当前的权限：
 ```
 [用户名]@[主机名]:~$ id
 uid=[UID]([用户名]) gid=[GID]([组名]) groups=[GID]([组名])
-```
+```text wrap
 ![](images/[截图文件名].png)
 
 ## 三、 权限提升 (Privilege Escalation)
@@ -136,28 +136,28 @@ sudo -l
 
 #### 步骤 1：[在攻击机/云服务器上搭建服务]
 [描述操作步骤和目的]
-```
+```text wrap
 [执行的命令]
 ```
 
 
 #### 步骤 2：[在靶机上执行操作]
 [描述操作步骤和目的]
-```
+```text wrap
 [执行的命令]
 ```
 
 
 #### 步骤 3：[获取敏感信息]
 [描述操作步骤和目的]
-```
+```text wrap
 [执行的命令]
 ```
 
 
 ### 3.3 获取 Flag
 [描述如何获取最终的 Flag 文件]
-```
+```text wrap
 [执行的命令]
 ```
 
@@ -168,14 +168,14 @@ sudo -l
 
 ### 4.1 备份 Shadow 文件
 [描述操作步骤和目的]
-```
+```text wrap
 [执行的命令]
 ```
 
 
 ### 4.2 合并 Passwd 与 Shadow
 [描述操作步骤和目的]
-```
+```text wrap
 unshadow passwd.txt shadow.txt > hash.txt
 ```
 
@@ -184,7 +184,7 @@ unshadow passwd.txt shadow.txt > hash.txt
 
 ### 4.3 破解密码哈希
 使用 Kali 自带的字典进行破解。
-```
+```text wrap
 # 解压字典（如果需要）
 sudo gunzip /usr/share/wordlists/[字典文件名].gz
 
@@ -195,7 +195,7 @@ john --wordlist=/usr/share/wordlists/[字典文件名].txt hash.txt
 
 ### 4.4 切换 Root 权限
 使用破解出的密码切换至 root 用户。
-```bash
+```bash wrap
 su root
 ```
 
@@ -213,7 +213,7 @@ su root
 - **[心得点 1]**：[例如：一个小小的 `link` 参数泄露了 `/etc/passwd`，为后续 SSH 爆破提供了用户名依据，是整个渗透的突破口]。
 - **[心得点 2]**：[例如：错误地配置 `sudoers` 文件，允许普通用户以 root 权限执行备份工具，是导致提权成功的根本原因]。
 - **[心得点 3]**：[例如：`medusa` 在某些场景下比 `hydra` 更稳定流畅]。
-```
+```text wrap
 
 ---
 
