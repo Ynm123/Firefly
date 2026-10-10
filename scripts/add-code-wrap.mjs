@@ -83,7 +83,8 @@ for (const file of files) {
 		}
 		const tokens = info.length ? info.split(/\s+/) : [];
 		const lang = tokens[0] ?? "";
-		summary.langs[lang || "(none)"] = (summary.langs[lang || "(none)"] ?? 0) + 1;
+		summary.langs[lang || "(none)"] =
+			(summary.langs[lang || "(none)"] ?? 0) + 1;
 
 		if (tokens.includes("wrap")) {
 			summary.alreadyWrap++;
@@ -102,7 +103,9 @@ for (const file of files) {
 		dirty = true;
 		summary.changed++;
 		if (report.length < 20) {
-			report.push(`  ${file.replace(/\\/g, "/")}:${i + 1}  ${line.trim()}  ->  ${lines[i].trim()}`);
+			report.push(
+				`  ${file.replace(/\\/g, "/")}:${i + 1}  ${line.trim()}  ->  ${lines[i].trim()}`,
+			);
 		}
 	}
 
@@ -117,7 +120,9 @@ console.log(
 	`需追加 wrap: ${summary.changed}  已有 wrap: ${summary.alreadyWrap}  跳过 mermaid: ${summary.skippedMermaid}  其中缩进块: ${summary.indented}  跳过 ~~~: ${summary.skippedTilde}`,
 );
 console.log("\n语言分布(按出现次数):");
-for (const [lang, n] of Object.entries(summary.langs).sort((a, b) => b[1] - a[1])) {
+for (const [lang, n] of Object.entries(summary.langs).sort(
+	(a, b) => b[1] - a[1],
+)) {
 	console.log(`  ${lang.padEnd(16)} ${n}`);
 }
 if (summary.metaSamples.length) {
