@@ -1,6 +1,6 @@
 ---
 title: Spring Framework
-published: 2026-10-07T09:00:00+08:00
+published: 2026-10-10T09:00:00+08:00
 description: 全面解析 Spring 框架的 SpEL 表达式注入与数据绑定漏洞，涵盖 CVE-2022-22965（Spring4Shell）、CVE-2022-22947（Spring Cloud Gateway RCE）、CVE-2022-22963（Spring Cloud Function RCE）、CVE-2017-8046（Spring Data REST RCE）等核心漏洞的原理分析、利用手法及实战修复方案。
 image: images/Pasted image 20261006194944.png
 tags:
