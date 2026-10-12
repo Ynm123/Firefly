@@ -1,6 +1,6 @@
 ---
 title: Apache Tomcat
-published: 2026-10-11T09:00:00+08:00
+published: 2026-10-12T09:00:00+08:00
 description: 全面解析 Apache Tomcat 的多个高危漏洞，涵盖 CVE-2017-12615（PUT 方法任意写文件）、CVE-2020-1938（Ghostcat AJP 文件包含）、CVE-2025-24813（会话持久化反序列化 RCE）、CVE-2026-34486（Tribes EncryptInterceptor 绕过 RCE）以及 Tomcat 弱口令后台 Getshell 的原理分析、利用手法及实战修复方案。
 image: images/Pasted image 20261011085813.png
 tags:
