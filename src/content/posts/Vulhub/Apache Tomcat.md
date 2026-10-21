@@ -24,6 +24,7 @@ comment: true
 | **漏洞类型**    | 任意文件写入 / 文件包含 / 反序列化 RCE / 认证绕过 / 弱口令                                                                |
 | **利用条件**    | 特定错误配置（readonly=false、AJP 开启、Session 持久化、Tribes 启用、弱口令等）                                             |
 | **核心原理**    | DefaultServlet 配置缺陷、AJP 协议设计缺陷、反序列化与集群通信缺陷                                                           |
+
 ## 一、漏洞原理
 
 Apache Tomcat 是当前最流行的 Java 中间件服务器之一，为 Java Servlet、JSP、WebSocket 等技术提供运行环境。Tomcat 的漏洞家族主要围绕三条技术主线展开：**DefaultServlet 配置缺陷**、**AJP 协议设计缺陷**以及**反序列化与集群通信缺陷**。
@@ -497,7 +498,7 @@ URLDNS 链仅依赖 JDK 内置类，不需要任何第三方库，非常适合�
 
 这里使用DNSLog平台，网站为`https://dnslog.org/`。
 
-同时需要使用ysoserial，下载链接如下（ysoserial 是 Java 反序列化利用的权威工具，可以生成各种 Gadget 链的序列化数据。）：
+同时需要使用ysoserial，下载链接如下（ysoserial 是 Java 反序列化利用的权威工具，可以生成各种 Gadget 链的序列化数据）：
 ```text wrap
 wget https://github.com/frohoff/ysoserial/releases/latest/download/ysoserial-all.jar
 ```
