@@ -2,12 +2,10 @@
 title: Alibaba Fastjson
 published: 2026-10-23T14:00:00+08:00
 description: "全面解析 Fastjson 的经典反序列化漏洞，涵盖 1.2.24（AutoType 未限制 JNDI 注入）、1.2.47（Class 缓存机制绕过白名单）以及 1.2.83（jar: 协议绕过 SafeMode）的核心原理、复现步骤及防御方案。"
+image: images/Pasted image 20261023130708.png
 tags:
   - Vulhub
   - CVE
-  - Fastjson
-  - JNDI注入
-  - 反序列化
 category: Vulhub靶场
 draft: false
 pinned: false
