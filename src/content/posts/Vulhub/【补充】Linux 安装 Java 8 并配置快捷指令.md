@@ -1,5 +1,5 @@
 ---
-title: 【补充】Linux安装Java 8并配置快捷指令
+title: 【补充】Linux 安装 Java 8 并配置快捷指令
 published: 2026-10-22T10:00:00+08:00
 description: 解决老旧安全工具与靶场环境的兼容性难题。详细记录在 Kali Linux 下通过镜像站下载并安装 OpenJDK 8 的步骤，并通过自定义脚本实现 java8 快捷指令，实现多版本 Java 完美共存，不影响系统默认环境。
 image: images/Pasted image 20261022170938.png

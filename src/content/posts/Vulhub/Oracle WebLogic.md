@@ -1,5 +1,5 @@
 ---
-title: Oracle WebLogic Server
+title: Oracle WebLogic
 published: 2026-10-21T09:00:00+08:00
 description: 全面解析 Oracle WebLogic Server 的多个高危漏洞，涵盖 CVE-2017-10271（XMLDecoder 反序列化 RCE）、CVE-2018-2628（T3 协议反序列化 RCE）、CVE-2018-2894（任意文件上传 Getshell）、CVE-2020-14882 & CVE-2020-14883（未授权 RCE）、CVE-2023-21839（未授权 JNDI 注入 RCE）、UDDI Explorer SSRF 以及弱口令后台 Getshell 的原理分析、利用手法及实战修复方案。
 image: images/Pasted image 20261012152553.png
