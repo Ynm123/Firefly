@@ -1,4 +1,4 @@
-# Node 的 fetch（undici）不会自动读取 Windows 系统代理，
+﻿# Node 的 fetch（undici）不会自动读取 Windows 系统代理，
 # 而 Astro 构建字体时需要从 cdn.jsdelivr.net 下载 woff2 计算字体度量，
 # 直连失败会报 CannotFetchFontFile 并中断 dev。这里先探测系统代理注入给 Node。
 if ($env:HTTP_PROXY -or $env:HTTPS_PROXY) {
