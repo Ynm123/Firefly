@@ -109,7 +109,7 @@ export const backgroundWallpaper: BackgroundWallpaperConfig = {
 				"Glaciers are the ultimate cold storage",
 				"Tectonic plates: the slowest merge request",
 				"Volcanoes are the system's core dumps",
-				"The desert stores ancient environment variables"
+				"The desert stores ancient environment variables",
 			],
 			// 主页横幅副标题字体大小
 			subtitleSize: "1.5rem",

@@ -8,8 +8,7 @@ export const sponsorConfig: SponsorConfig = {
 	description: "",
 
 	// 打赏用途说明
-	usage:
-		"你无需打赏",
+	usage: "你无需打赏",
 
 	// 是否显示打赏者列表
 	showSponsorsList: false,
