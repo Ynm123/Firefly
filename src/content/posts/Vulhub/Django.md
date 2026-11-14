@@ -1,6 +1,6 @@
 ---
 title: Django
-published: 2026-10-26T10:00:00+08:00
+published: 2026-11-14T10:00:00+08:00
 description: 全面解析 Django 框架历年来的多个高危漏洞，涵盖 CVE-2017-12794（调试页面 XSS）、CVE-2018-14574（任意 URL 跳转）、以及 CVE-2019-14234 到 CVE-2022-34265 这五个发生在不同组件（JSONField、GIS、order_by、Trunc）中的 SQL 注入漏洞的原理分析与实战复现。
 image: images/Pasted image 20261026094030.png
 tags:
